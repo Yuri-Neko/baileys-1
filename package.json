@@ -14,7 +14,7 @@
   ],
   "homepage": "https://github.com/ditss-dev/baileys",
   "repository": {
-    "url": "git+ssh://git@github.com/nstar-y/Bail.git"
+    "url": "git+ssh://git@github.com/ditss-dev/baileys.git"
   },
   "license": "MIT",
   "author": "Adhiraj Singh",
