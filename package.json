@@ -1,6 +1,6 @@
 {
-  "name": "@ditss-dev/baileys",
-  "version": "6.8.1",
+  "name": "@ditss/baileys",
+  "version": "6.8.2",
   "description": "WhatsApp API",
   "keywords": [
     "whatsapp",
@@ -12,9 +12,9 @@
     "automation",
     "multi-device"
   ],
-  "homepage": "https://github.com/ditss-dev/baileys",
+  "homepage": "https://github.com/nstar-y/Bail",
   "repository": {
-    "url": "git+ssh://git@github.com/ditss-dev/baileys.git"
+    "url": "git+ssh://git@github.com/nstar-y/Bail.git"
   },
   "license": "MIT",
   "author": "Adhiraj Singh",
