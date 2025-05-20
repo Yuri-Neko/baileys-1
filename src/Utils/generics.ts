@@ -2,7 +2,7 @@ import { Boom } from '@hapi/boom'
 import axios, { AxiosRequestConfig } from 'axios'
 import { createHash, randomBytes } from 'crypto'
 import { platform, release } from 'os'
-import { Logger } from 'pino'
+import { ILogger } from './logger'
 import { proto } from '../../WAProto'
 import { version as baileysVersion } from '../Defaults/baileys-version.json'
 import { BaileysEventEmitter, BaileysEventMap, BrowsersMap, DisconnectReason, WACallUpdateType, WAVersion } from '../Types'
@@ -37,7 +37,7 @@ export const Browsers: BrowsersMap = {
 
 export const getPlatformId = (browser: string) => {
 	const platformType = proto.DeviceProps.PlatformType[browser.toUpperCase()]
-	return platformType ? platformType.toString().charCodeAt(0).toString() : '49' //chrome
+	return platformType ? platformType.toString() : '49' //chrome
 }
 
 export const BufferJSON = {
@@ -114,7 +114,7 @@ export const encodeBigEndian = (e: number, t = 4) => {
 	return a
 }
 
-export const toNumber = (t: Long | number | null | undefined): number => ((typeof t === 'object' && t) ? ('toNumber' in t ? t.toNumber() : (t as any).low) : t)
+export const toNumber = (t: Long | number | null | undefined): number => ((typeof t === 'object' && t) ? ('toNumber' in t ? t.toNumber() : (t as any).low) : t || 0)
 
 /** unix timestamp of a date in seconds */
 export const unixTimestampSeconds = (date: Date = new Date()) => Math.floor(date.getTime() / 1000)
@@ -194,26 +194,26 @@ export const generateMessageIDV2 = (userId?: string): string => {
 	const data = Buffer.alloc(8 + 20 + 16)
 	data.writeBigUInt64BE(BigInt(Math.floor(Date.now() / 1000)))
 
-	if (userId) {
+	if(userId) {
 		const id = jidDecode(userId)
-		if (id?.user) {
+		if(id?.user) {
 			data.write(id.user, 8)
 			data.write('@c.us', 8 + id.user.length)
 		}
 	}
 
-	const random = randomBytes(20)
+	const random = randomBytes(16)
 	random.copy(data, 28)
 
 	const hash = createHash('sha256').update(data).digest()
-	return 'B1EY' + hash.toString('hex').toUpperCase().substring(0, 16)
+	return '3EB0' + hash.toString('hex').toUpperCase().substring(0, 18)
 }
 
 // generate a random ID to attach to a message
-export const generateMessageID = () => 'B1EY' + randomBytes(8).toString('hex').toUpperCase()
+export const generateMessageID = () => '3EB0' + randomBytes(18).toString('hex').toUpperCase()
 
 export function bindWaitForEvent<T extends keyof BaileysEventMap>(ev: BaileysEventEmitter, event: T) {
-	return async(check: (u: BaileysEventMap[T]) => boolean | undefined, timeoutMs?: number) => {
+	return async(check: (u: BaileysEventMap[T]) => Promise<boolean | undefined>, timeoutMs?: number) => {
 		let listener: (item: BaileysEventMap[T]) => void
 		let closeListener: any
 		await (
@@ -230,8 +230,8 @@ export function bindWaitForEvent<T extends keyof BaileysEventMap>(ev: BaileysEve
 					}
 
 					ev.on('connection.update', closeListener)
-					listener = (update) => {
-						if(check(update)) {
+					listener = async(update) => {
+						if(await check(update)) {
 							resolve()
 						}
 					}
@@ -249,7 +249,7 @@ export function bindWaitForEvent<T extends keyof BaileysEventMap>(ev: BaileysEve
 
 export const bindWaitForConnectionUpdate = (ev: BaileysEventEmitter) => bindWaitForEvent(ev, 'connection.update')
 
-export const printQRIfNecessaryListener = (ev: BaileysEventEmitter, logger: Logger) => {
+export const printQRIfNecessaryListener = (ev: BaileysEventEmitter, logger: ILogger) => {
 	ev.on('connection.update', async({ qr }) => {
 		if(qr) {
 			const QR = await import('qrcode-terminal')
@@ -338,6 +338,7 @@ export const generateMdTagPrefix = () => {
 }
 
 const STATUS_MAP: { [_: string]: proto.WebMessageInfo.Status } = {
+	'sender': proto.WebMessageInfo.Status.SERVER_ACK,
 	'played': proto.WebMessageInfo.Status.PLAYED,
 	'read': proto.WebMessageInfo.Status.READ,
 	'read-self': proto.WebMessageInfo.Status.READ
